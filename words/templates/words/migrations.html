@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Migrations</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    .btn { display: inline-block; background: #4CAF50; color: #fff; padding: 8px 14px; border-radius: 4px; text-decoration: none; cursor: pointer; border: 0; }
+    .btn.secondary { background: #555; }
+    .btn.warning { background: #f39c12; }
+    .card { background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 220px; }
+    label { display: block; font-weight: bold; margin-bottom: 6px; }
+    select, input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 20px; background: #eee; margin-right: 6px; margin-bottom: 6px; }
+    .notice { padding: 8px 10px; background: #f7f7ff; border-left: 3px solid #4CAF50; margin-top: 8px; color: #333; }
+    .error { padding: 8px 10px; background: #fff4f4; border-left: 3px solid #d33; margin-top: 8px; color: #b00; }
+    /* Collapsible styling similar to French page */
+    .collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+    .collapsible-header .toggle-icon { transition: transform 0.3s ease; }
+    .collapsible-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+    .collapsible-content { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; max-height: 1000px; opacity: 1; overflow: hidden; }
+    .collapsible-content.collapsed { max-height: 0; opacity: 0; }
+    pre { white-space: pre-wrap; background:#f8f9fa; padding:10px; border-radius:4px; max-height: 300px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <h1>Migrations</h1>
+  <div style="margin-bottom: 14px;">
+    <a href="{% url 'french_words' %}" class="btn secondary">Back to Words</a>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="col">
+        <label for="source_lang">Source language</label>
+        <select id="source_lang">
+          <option value="fr">French</option>
+          <option value="es">Spanish</option>
+          <option value="it">Italian</option>
+          <option value="ru">Russian</option>
+          <option value="ja">Japanese</option>
+        </select>
+      </div>
+      <div class="col">
+        <label for="target_langs">Target languages (multi)</label>
+        <select id="target_langs" multiple size="5">
+          <option value="es">Spanish</option>
+          <option value="it">Italian</option>
+          <option value="ru">Russian</option>
+          <option value="ja">Japanese</option>
+        </select>
+      </div>
+      <div class="col">
+        <label for="batch_size">Batch size</label>
+        <input id="batch_size" type="number" min="1" max="100" value="20" />
+      </div>
+      <div class="col">
+        <label for="last_n">Limit to last N (0 = auto)</label>
+        <input id="last_n" type="number" min="0" max="1000" value="0" />
+      </div>
+      <div class="col">
+        <label for="only_not_migrated">Skip already migrated</label>
+        <select id="only_not_migrated">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 10px;">
+      <div class="col">
+        <label for="provider">AI Provider</label>
+        <select id="provider">
+          <option {% if default_provider == 'Gemini' %}selected{% endif %}>Gemini</option>
+          <option {% if default_provider == 'OpenAI' %}selected{% endif %}>OpenAI</option>
+          <option {% if default_provider == 'Anthropic' %}selected{% endif %}>Anthropic</option>
+        </select>
+      </div>
+      <div class="col">
+        <label for="model">Model</label>
+        <select id="model">
+          {% if default_model %}
+          <option selected>{{ default_model }}</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="col" style="display:flex;align-items:flex-end; gap: 8px;">
+        <button id="btn_start" class="btn">Create Batch</button>
+        <button id="btn_run" class="btn warning" disabled>Run Batch</button>
+      </div>
+    </div>
+    <div id="msg" class="notice" style="display:none;"></div>
+    <div id="err" class="error" style="display:none;"></div>
+  </div>
+
+  <!-- Removed standalone status card; status is shown inside AI Debug Information -->
+
+  <div class="card" id="debug-card" style="display:block;">
+    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+      <h3 style="margin:0;">AI Debug Information</h3>
+      <span class="toggle-icon">▼</span>
+    </div>
+    <div class="collapsible-content">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+        <h4 style="margin: 0;">Processing Status</h4>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="collapsible-content" id="debug-status">
+        <div id="debug-empty" class="notice">No debug entries yet.</div>
+        <table style="width:100%; border-collapse: collapse; display:none;" id="debug-status-table">
+          <thead>
+            <tr>
+              <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">#</th>
+              <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Source</th>
+              <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Target</th>
+              <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="debug-status-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+        <h4 style="margin: 0;">AI Prompts (What We're Sending)</h4>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="collapsible-content" id="debug-prompts"></div>
+
+      <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+        <h4 style="margin: 0;">AI Responses (What We're Getting Back)</h4>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="collapsible-content" id="debug-responses"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Planned behavior</h3>
+    <p>- Creates a batch and per-word items for each target language (default select latest 100 of source).</p>
+    <p>- Processing will translate and link words without duplicates, using the strict JSON prompt defined in the readme.</p>
+  </div>
+
+  <script>
+    const providerEl = document.getElementById('provider');
+    const modelEl = document.getElementById('model');
+    const msgEl = document.getElementById('msg');
+    const errEl = document.getElementById('err');
+    const runBtn = document.getElementById('btn_run');
+    let currentBatchId = null;
+
+    async function refreshModels() {
+      msgEl.style.display = 'none'; errEl.style.display = 'none';
+      const form = new FormData();
+      form.append('provider', providerEl.value);
+      const resp = await fetch('{% url "migration_models_for_provider" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: form
+      });
+      const data = await resp.json();
+      modelEl.innerHTML = '';
+      (data.models || []).forEach(m => {
+        const opt = document.createElement('option');
+        opt.textContent = m; opt.value = m; modelEl.appendChild(opt);
+      });
+      // If server provided a default model and it's in the list, select it
+      const def = '{{ default_model|default:"" }}';
+      if (def) {
+        const opt = Array.from(modelEl.options).find(o => o.value === def);
+        if (opt) modelEl.value = def;
+      }
+    }
+
+    providerEl.addEventListener('change', refreshModels);
+    document.addEventListener('DOMContentLoaded', refreshModels);
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function getSelectedTargets() {
+      return Array.from(document.getElementById('target_langs').selectedOptions).map(o => o.value);
+    }
+
+    async function pollStatus() {
+      if (!currentBatchId) return;
+      try {
+        const statusUrl = '{% url "migration_status" 0 %}'.replace('/0/', `/${currentBatchId}/`);
+        const resp = await fetch(statusUrl);
+        const data = await resp.json();
+        if (data.success) {
+        // Update processing summary
+        // Render processing info table and summaries
+        renderProcessingInfo(data.processing || {});
+        // Render debug entries if any (collapsible sections like the French page)
+        renderDebug(data.debug || []);
+        }
+        if (data.success && (data.status === 'completed' || data.status === 'failed')) {
+          clearInterval(window._pollInterval);
+          runBtn.disabled = false;
+        }
+      } catch (e) {
+        errEl.textContent = (e && e.message) ? e.message : 'Status polling failed';
+        errEl.style.display = 'block';
+        clearInterval(window._pollInterval);
+        runBtn.disabled = false;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderDebug(debug) {
+      const debugCard = document.getElementById('debug-card');
+      const empty = document.getElementById('debug-empty');
+      const statusTable = document.getElementById('debug-status-table');
+      const statusRows = document.getElementById('debug-status-rows');
+      const promptsDiv = document.getElementById('debug-prompts');
+      const responsesDiv = document.getElementById('debug-responses');
+      if (!debug || debug.length === 0) return;
+      debugCard.style.display = 'block';
+      empty.style.display = 'none';
+      statusTable.style.display = 'table';
+      statusRows.innerHTML = '';
+      debug.forEach((entry, idx) => {
+        const tr = document.createElement('tr');
+        [idx+1, `${entry.source_language}:${entry.source_word_id}`, entry.target_language, entry.status].forEach(t => {
+          const td = document.createElement('td');
+          td.style.padding = '6px';
+          td.style.borderBottom = '1px solid #ddd';
+          td.textContent = t;
+          tr.appendChild(td);
+        });
+        statusRows.appendChild(tr);
+      });
+      // Prompts
+      promptsDiv.innerHTML = '';
+      debug.forEach((entry, idx) => {
+        const wrap = document.createElement('div');
+        wrap.style.border = '1px solid #ddd';
+        wrap.style.borderRadius = '4px';
+        wrap.style.marginBottom = '10px';
+        wrap.style.overflow = 'hidden';
+        const h = document.createElement('div');
+        h.className = 'collapsible-header collapsed';
+        h.style.padding = '10px';
+        h.style.backgroundColor = '#f9f9f9';
+        h.innerHTML = `<strong>Item #${idx+1}</strong> ${entry.source_language}:${entry.source_word_id} → ${entry.target_language}<span class="toggle-icon">▼</span>`;
+        h.onclick = function(){ toggleCollapsible(this); };
+        const c = document.createElement('div');
+        c.className = 'collapsible-content collapsed';
+        c.style.padding = '10px';
+        const sys = entry.system_prompt ? `<h6>System Prompt</h6><pre>${escapeHtml(entry.system_prompt)}</pre>` : '';
+        const usr = entry.user_prompt ? `<h6>User Prompt</h6><pre>${escapeHtml(entry.user_prompt)}</pre>` : '';
+        c.innerHTML = sys + usr;
+        wrap.appendChild(h);
+        wrap.appendChild(c);
+        promptsDiv.appendChild(wrap);
+      });
+      // Responses
+      responsesDiv.innerHTML = '';
+      debug.forEach((entry, idx) => {
+        const wrap = document.createElement('div');
+        wrap.style.border = '1px solid #ddd';
+        wrap.style.borderRadius = '4px';
+        wrap.style.marginBottom = '10px';
+        wrap.style.overflow = 'hidden';
+        const h = document.createElement('div');
+        h.className = 'collapsible-header collapsed';
+        h.style.padding = '10px';
+        h.style.backgroundColor = '#f9f9f9';
+        h.innerHTML = `<strong>Item #${idx+1}</strong> ${entry.source_language}:${entry.source_word_id} → ${entry.target_language} [${entry.status}]<span class="toggle-icon">▼</span>`;
+        h.onclick = function(){ toggleCollapsible(this); };
+        const c = document.createElement('div');
+        c.className = 'collapsible-content collapsed';
+        c.style.padding = '10px';
+        if (entry.ai_result) {
+          c.innerHTML = `<pre>${escapeHtml(JSON.stringify(entry.ai_result, null, 2))}</pre>`;
+        } else if (entry.error) {
+          c.innerHTML = `<div class=\"error\">Error: ${escapeHtml(entry.error)}</div>`;
+        } else {
+          c.innerHTML = '<div class=\"notice\">No response captured.</div>';
+        }
+        wrap.appendChild(h);
+        wrap.appendChild(c);
+        responsesDiv.appendChild(wrap);
+      });
+    }
+
+    function renderProcessingInfo(proc) {
+      const debugCard = document.getElementById('debug-card');
+      debugCard.style.display = 'block';
+      const statusTable = document.getElementById('debug-status-table');
+      const statusRows = document.getElementById('debug-status-rows');
+      const empty = document.getElementById('debug-empty');
+      // Add a simple summary banner above table
+      let summary = document.getElementById('debug-summary');
+      if (!summary) {
+        const s = document.createElement('div');
+        s.id = 'debug-summary';
+        s.style.margin = '6px 0 10px';
+        s.style.fontSize = '0.95rem';
+        const holder = document.getElementById('debug-status');
+        holder.insertBefore(s, holder.firstChild);
+        summary = s;
+      }
+      if (proc && proc.status) {
+        const total = proc.total_items ?? '-';
+        const done = proc.processed_items ?? 0;
+        // elapsed timer
+        let elapsed = '00:00:00';
+        if (proc.status === 'processing' && proc.start_time) {
+          const start = new Date(proc.start_time.replace(' ', 'T'));
+          const now = new Date();
+          elapsed = fmtElapsed(Math.floor((now - start)/1000));
+          // schedule next tick
+          setTimeout(() => renderProcessingInfo(proc), 1000);
+        } else if (proc.total_duration) {
+          elapsed = fmtElapsed(Math.floor(proc.total_duration));
+        }
+        summary.textContent = `Status: ${proc.status} | ${done}/${total} items | Start: ${proc.start_time || '-'} | End: ${proc.end_time || '-'} | Elapsed: ${elapsed}`;
+      } else {
+        summary.textContent = 'Status: pending';
+      }
+      statusRows.innerHTML = '';
+      if (!proc || !proc.items || proc.items.length === 0) {
+        empty.style.display = 'block';
+        statusTable.style.display = 'none';
+        return;
+      }
+      empty.style.display = 'none';
+      statusTable.style.display = 'table';
+      proc.items.forEach((it, i) => {
+        const tr = document.createElement('tr');
+        [i+1, it.src, it.tgt, `${it.status}${it.error ? ' (error)' : ''}`].forEach(t => {
+          const td = document.createElement('td');
+          td.style.padding = '6px';
+          td.style.borderBottom = '1px solid #ddd';
+          td.textContent = t;
+          tr.appendChild(td);
+        });
+        statusRows.appendChild(tr);
+      });
+    }
+
+    function fmtElapsed(totalSeconds){
+      const h = Math.floor(totalSeconds/3600).toString().padStart(2,'0');
+      const m = Math.floor((totalSeconds%3600)/60).toString().padStart(2,'0');
+      const s = (totalSeconds%60).toString().padStart(2,'0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function toggleCollapsible(header) {
+      header.classList.toggle('collapsed');
+      const content = header.nextElementSibling;
+      if (content) content.classList.toggle('collapsed');
+    }
+
+    document.getElementById('btn_start').addEventListener('click', async () => {
+      msgEl.style.display = 'none'; errEl.style.display = 'none';
+      const payload = {
+        source_lang: document.getElementById('source_lang').value,
+        target_langs: getSelectedTargets(),
+        batch_size: parseInt(document.getElementById('batch_size').value, 10) || 20,
+        provider: providerEl.value,
+        model: modelEl.value,
+        last_n: parseInt(document.getElementById('last_n').value, 10) || 0,
+        only_not_migrated: document.getElementById('only_not_migrated').value
+      };
+      try {
+        const resp = await fetch('{% url "start_migration" %}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (data.success) {
+          currentBatchId = data.batch_id;
+          runBtn.disabled = false;
+          msgEl.textContent = `Batch ${data.batch_id} created with ${data.items_created} items.`;
+          msgEl.style.display = 'block';
+          // Make debug card visible with initial summary
+          renderProcessingInfo({ status: 'created', total_items: data.items_created, processed_items: 0, start_time: '', end_time: '', items: [] });
+        } else {
+          errEl.textContent = data.message || 'Failed to create batch';
+          errEl.style.display = 'block';
+        }
+      } catch (e) {
+        errEl.textContent = e.message || 'Error creating batch';
+        errEl.style.display = 'block';
+      }
+    });
+
+    document.getElementById('btn_run').addEventListener('click', async () => {
+      if (!currentBatchId) return;
+      runBtn.disabled = true;
+      try {
+        const resp = await fetch('{% url "run_migration_batch" %}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          body: JSON.stringify({ batch_id: currentBatchId, provider: providerEl.value, model: modelEl.value })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          // Kick off polling immediately and show a running summary
+          renderProcessingInfo({ status: 'processing', total_items: undefined, processed_items: 0, start_time: new Date().toISOString(), end_time: '', items: [] });
+          clearInterval(window._pollInterval);
+          window._pollInterval = setInterval(pollStatus, 1500);
+        } else {
+          errEl.textContent = data.message || 'Run failed to start';
+          errEl.style.display = 'block';
+          runBtn.disabled = false;
+        }
+      } catch (e) {
+        errEl.textContent = e.message || 'Error running batch';
+        errEl.style.display = 'block';
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+

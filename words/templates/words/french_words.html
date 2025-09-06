@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Words - Vocabulary Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        th a {
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        th a:hover {
+            text-decoration: underline;
+        }
+        .sort-icon {
+            margin-left: 5px;
+            display: inline-block;
+        }
+        .sort-asc::after {
+            content: "▲";
+            font-size: 10px;
+        }
+        .sort-desc::after {
+            content: "▼";
+            font-size: 10px;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .tab-active { background-color: #2196F3 !important; }
+        .tab-inactive { background-color: #4CAF50 !important; }
+        .empty-message {
+            margin-top: 20px;
+            color: #666;
+            font-style: italic;
+        }
+        .example {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #4CAF50;
+        }
+        .explanation {
+            margin-top: 8px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-left: 3px solid #2e7d32;
+            font-weight: 500;
+            font-style: italic;
+        }
+        .input-area {
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .model-selector {
+            margin-bottom: 15px;
+        }
+        .model-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .model-selector select, .model-selector input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .model-selector small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.8em;
+        }
+        .filter-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .filter-field {
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            height: 35px;
+        }
+        .filter-btn.reset {
+            background-color: #f44336;
+        }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .pagination .btn {
+            margin-top: 0;
+            padding: 5px 10px;
+        }
+        .pagination .current {
+            background-color: #333;
+        }
+        /* Loading spinner */
+        .loader-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+        .loader-text {
+            color: white;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Deletion area styling */
+        .deletion-area {
+            margin: 30px 0;
+            background-color: #fff9f9;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #f44336;
+        }
+        .deletion-area h2 {
+            color: #d32f2f;
+            margin-top: 0;
+        }
+        .deletion-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .deletion-field {
+            flex: 1;
+            min-width: 200px;
+        }
+        .deletion-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        .delete-btn.range {
+            background-color: #ff9800;
+        }
+        .delete-btn.all {
+            background-color: #f44336;
+        }
+        .undo-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .undo-btn:hover {
+            background-color: #0b7dda;
+        }
+        .undo-btn.disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+        }
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 5px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .confirm-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .cancel-btn {
+            background-color: #9e9e9e;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        /* Collapsible section styles */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+        
+        .collapsible-header h2 {
+            margin: 0;
+        }
+        
+        .collapsible-header .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .collapsible-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        
+        .collapsible-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 1000px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+        /* Checkbox for review */
+        .review-checkbox {
+            transform: scale(1.5);
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .review-cell {
+            text-align: center;
+            width: 50px;
+        }
+        /* Badge for frequency and category */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px 0;
+            white-space: nowrap;
+        }
+        .frequency-badge {
+            background-color: #e0f7fa;
+            color: #006064;
+        }
+        .category-badge {
+            background-color: #f3e5f5;
+            color: #4a148c;
+        }
+        .category-2-badge {
+            background-color: #fff8e1;
+            color: #ff6f00;
+        }
+        /* Synonym/Antonym styling */
+        .word-container {
+            margin-bottom: 5px;
+        }
+        .word-form {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 3px;
+            cursor: pointer;
+        }
+        .word-form:hover {
+            text-decoration: underline;
+        }
+        .related-words {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 10px;
+            margin-bottom: 8px;
+        }
+        .synonym {
+            color: #2e7d32;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .synonym:hover {
+            text-decoration: underline;
+        }
+        .antonym {
+            color: #c62828;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .antonym:hover {
+            text-decoration: underline;
+        }
+        .separator {
+            margin: 0 3px;
+            color: #999;
+        }
+        .example, .explanation {
+            cursor: pointer;
+        }
+        .example:hover, .explanation:hover {
+            text-decoration: underline;
+        }
+        /* Add this to your existing styles */
+        .clickable {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+        }
+        .clickable:hover {
+            color: #0056b3;
+        }
+    </style>
+    <script>
+        function stopProcessing() {
+            var btn = document.getElementById('stop-processing-btn');
+            if (btn) { btn.disabled = true; }
+            const toast = document.getElementById('status-toast');
+            if (toast) { toast.textContent = 'Stopping…'; toast.style.display = 'inline-block'; }
+            fetch('{% url "stop_processing" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({})
+            }).then(r => r.json()).then(data => {
+                // Force a quick status refresh
+                setTimeout(updateProcessingInfo, 300);
+            }).catch(e => {
+                console.error('Stop request failed', e);
+                if (toast) { toast.textContent = 'Stop failed'; }
+            });
+        }
+        function updateModels(provider) {
+            // Redirect to the same page with the selected provider
+            window.location.href = "{% url 'french_words' %}?provider=" + provider;
+        }
+
+        function showLoader() {
+            // Intercept form submit and run asynchronously to keep UI live
+            const form = document.getElementById('french-text-form');
+            if (!form) return false;
+            
+            // Show processing UI immediately
+            const now = new Date();
+            const container = document.getElementById('processing-info-container');
+            if (container) container.style.display = 'block';
+            const statusEl = document.getElementById('processing-status');
+            const batchProgressEl = document.getElementById('batch-progress');
+            const currentBatchEl = document.getElementById('current-batch');
+            const startTimeEl = document.getElementById('start-time');
+            const elapsedEl = document.getElementById('elapsed-time');
+            const endTimeEl = document.getElementById('end-time');
+            if (statusEl) statusEl.textContent = 'Starting…';
+            if (batchProgressEl) batchProgressEl.textContent = '0/0';
+            if (currentBatchEl) currentBatchEl.textContent = '-';
+            if (startTimeEl) startTimeEl.textContent = now.toLocaleTimeString();
+            if (elapsedEl) elapsedEl.textContent = '00:00:00';
+            if (endTimeEl) endTimeEl.textContent = '-';
+            const toast = document.getElementById('status-toast');
+            if (toast) { toast.textContent = 'Processing started…'; toast.style.display = 'inline-block'; }
+            
+            // Start polling quickly
+            setTimeout(updateProcessingInfo, 300);
+            
+            // Build form data and POST via fetch
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+                body: formData,
+                redirect: 'manual'
+            }).then(() => {
+                // Final refresh after completion to show message/session updates
+                setTimeout(updateProcessingInfo, 300);
+            }).catch(err => {
+                console.error('Submit error:', err);
+            });
+            // Prevent default navigation
+            return false;
+        }
+        
+        // Data deletion functions
+        function showDeleteConfirmation(type, message) {
+            const modal = document.getElementById('delete-confirmation-modal');
+            const modalMessage = document.getElementById('delete-confirmation-message');
+            const confirmButton = document.getElementById('confirm-delete-btn');
+            
+            modalMessage.textContent = message;
+            modal.setAttribute('data-delete-type', type);
+            modal.style.display = 'block';
+        }
+        
+        function hideDeleteConfirmation() {
+            const modal = document.getElementById('delete-confirmation-modal');
+            modal.style.display = 'none';
+        }
+        
+        function deleteById() {
+            const model = document.getElementById('model-choice').value;
+            const recordId = document.getElementById('record-id').value;
+            
+            if (!model || !recordId) {
+                showNotification('Please select a model and enter a record ID', false);
+                return;
+            }
+            
+            let message = `Are you sure you want to delete ${model} with ID ${recordId}?`;
+            if (model === 'FrenchWord') {
+                message += ` This will also delete all related examples in the French example table.`;
+            }
+            
+            showDeleteConfirmation('single', message);
+        }
+        
+        function deleteByIdRange() {
+            const model = document.getElementById('model-choice').value;
+            const startId = document.getElementById('start-id').value;
+            const endId = document.getElementById('end-id').value;
+            
+            if (!model || !startId || !endId) {
+                showNotification('Please select a model and enter both start and end IDs', false);
+                return;
+            }
+            
+            let message = `Are you sure you want to delete all ${model} records with IDs from ${startId} to ${endId}?`;
+            if (model === 'FrenchWord') {
+                message += ` This will also delete all related examples in the French example table.`;
+            }
+            
+            showDeleteConfirmation('range', message);
+        }
+        
+        function deleteAllRecords() {
+            const model = document.getElementById('model-choice').value;
+            
+            if (!model) {
+                showNotification('Please select a model', false);
+                return;
+            }
+            
+            let message = `WARNING: Are you sure you want to delete ALL ${model} records?`;
+            if (model === 'FrenchWord') {
+                message += ` This will also delete all related examples in the French example table.`;
+            }
+            
+            showDeleteConfirmation('all', message);
+        }
+        
+        function confirmDelete() {
+            const modal = document.getElementById('delete-confirmation-modal');
+            const deleteType = modal.getAttribute('data-delete-type');
+            const model = document.getElementById('model-choice').value;
+            
+            if (deleteType === 'single') {
+                const recordId = document.getElementById('record-id').value;
+                performDelete(`{% url 'delete_record' %}`, { 
+                    model, 
+                    id: recordId
+                });
+            } else if (deleteType === 'range') {
+                const startId = document.getElementById('start-id').value;
+                const endId = document.getElementById('end-id').value;
+                performDelete(`{% url 'delete_record_range' %}`, { 
+                    model, 
+                    start_id: startId, 
+                    end_id: endId
+                });
+            } else if (deleteType === 'all') {
+                performDelete(`{% url 'delete_all_records' %}`, { 
+                    model
+                });
+            }
+            
+            hideDeleteConfirmation();
+        }
+        
+        function performDelete(url, data) {
+            // Show loader
+            document.getElementById('loader-container').style.display = 'flex';
+            document.querySelector('.loader-text').textContent = 'Deleting data...';
+            
+            console.log('Sending delete request with data:', data);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                showNotification(data.message, data.success);
+                
+                if (data.success) {
+                    // Enable undo button if operation was successful
+                    const undoButton = document.getElementById('undo-delete-btn');
+                    undoButton.classList.remove('disabled');
+                    undoButton.disabled = false;
+                    
+                    // Refresh the page after 1.5 seconds to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                console.error('Error:', error);
+                showNotification('An error occurred while deleting data', false);
+            });
+        }
+        
+        function undoLastDeletion() {
+            const undoButton = document.getElementById('undo-delete-btn');
+            
+            if (undoButton.classList.contains('disabled')) {
+                return;
+            }
+            
+            // Show loader
+            document.getElementById('loader-container').style.display = 'flex';
+            document.querySelector('.loader-text').textContent = 'Restoring data...';
+            
+            fetch(`{% url 'undo_deletion' %}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ operation_id: '{{ last_operation_id }}' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                showNotification(data.message, data.success);
+                
+                if (data.success) {
+                    // Disable undo button after successful undo
+                    undoButton.classList.add('disabled');
+                    undoButton.disabled = true;
+                    
+                    // Refresh the page after 1.5 seconds to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                console.error('Error:', error);
+                showNotification('An error occurred while restoring data', false);
+            });
+        }
+        
+        function showNotification(message, success) {
+            const notificationArea = document.getElementById('notification-area');
+            notificationArea.textContent = message;
+            notificationArea.className = success ? 'message success' : 'message error';
+            notificationArea.style.display = 'block';
+            
+            // Hide notification after 5 seconds
+            setTimeout(() => {
+                notificationArea.style.display = 'none';
+            }, 5000);
+        }
+        
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return '';
+        }
+        
+        function toggleCollapsible(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            content.classList.toggle('collapsed');
+        }
+        
+        function toggleMarkedForReview(checkbox, wordId) {
+            // Show loader
+            document.getElementById('loader-container').style.display = 'flex';
+            document.querySelector('.loader-text').textContent = 'Updating...';
+            
+            fetch('{% url "toggle_marked_for_review" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    id: wordId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                if (data.success) {
+                    // Update checkbox state to match the server state
+                    checkbox.checked = data.marked;
+                    
+                    // Flash a quick notification
+                    showNotification(data.message, true);
+                } else {
+                    // Revert checkbox if there was an error
+                    checkbox.checked = !checkbox.checked;
+                    showNotification(data.message, false);
+                }
+            })
+            .catch(error => {
+                // Hide loader
+                document.getElementById('loader-container').style.display = 'none';
+                
+                // Revert checkbox
+                checkbox.checked = !checkbox.checked;
+                console.error('Error:', error);
+                showNotification('An error occurred while updating', false);
+            });
+        }
+        
+        // Google Translate function
+        function openGoogleTranslate(text) {
+            // Encode the text for URL
+            const encodedText = encodeURIComponent(text);
+            // Open Google Translate in a new tab with the details view that shows dictionary
+            let srcLang = 'fr';
+            if ('{{ active_lang|default:"fr" }}' === 'es') srcLang = 'es';
+            if ('{{ active_lang|default:"fr" }}' === 'it') srcLang = 'it';
+            if ('{{ active_lang|default:"fr" }}' === 'ru') srcLang = 'ru';
+            if ('{{ active_lang|default:"fr" }}' === 'ja') srcLang = 'ja';
+            window.open(`https://translate.google.com/details?sl=${srcLang}&tl=en&text=${encodedText}&op=translate`, '_blank');
+        }
+        
+        // Initialize collapsible sections when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const header = document.querySelector('.collapsible-header');
+            const content = document.querySelector('.collapsible-content');
+            
+            // Check if there's a saved state in localStorage
+            const isCollapsed = localStorage.getItem('dataManagementCollapsed') === 'true';
+            
+            if (isCollapsed) {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+            }
+        });
+    </script>
+</head>
+<body>
+    {% load custom_filters %}
+    <h1>Words</h1>
+    <div style="margin-top:10px; margin-bottom: 10px;">
+        <a href="{% url 'french_words' %}?lang=fr{% if request.GET.provider %}&provider={{ request.GET.provider }}{% endif %}"
+           class="btn {% if active_lang == 'fr' %}tab-active{% else %}tab-inactive{% endif %}">French</a>
+        <a href="{% url 'french_words' %}?lang=es{% if request.GET.provider %}&provider={{ request.GET.provider }}{% endif %}"
+           class="btn {% if active_lang == 'es' %}tab-active{% else %}tab-inactive{% endif %}">Spanish</a>
+        <a href="{% url 'french_words' %}?lang=it{% if request.GET.provider %}&provider={{ request.GET.provider }}{% endif %}"
+           class="btn {% if active_lang == 'it' %}tab-active{% else %}tab-inactive{% endif %}">Italian</a>
+        <a href="{% url 'french_words' %}?lang=ru{% if request.GET.provider %}&provider={{ request.GET.provider }}{% endif %}"
+           class="btn {% if active_lang == 'ru' %}tab-active{% else %}tab-inactive{% endif %}">Russian</a>
+        <a href="{% url 'french_words' %}?lang=ja{% if request.GET.provider %}&provider={{ request.GET.provider }}{% endif %}"
+           class="btn {% if active_lang == 'ja' %}tab-active{% else %}tab-inactive{% endif %}">Japanese</a>
+        <a href="{% url 'migrations_page' %}"
+           class="btn tab-inactive">Migrations</a>
+    </div>
+    
+    <!-- Loading spinner -->
+    <div id="loader-container" class="loader-container">
+        <div style="text-align: center;">
+            <div class="loader"></div>
+            <div class="loader-text">Processing your text... This may take a minute.</div>
+        </div>
+    </div>
+    
+    <!-- Delete confirmation modal -->
+    <div id="delete-confirmation-modal" class="modal" data-delete-type="">
+        <div class="modal-content">
+            <h2>Confirm Deletion</h2>
+            <p id="delete-confirmation-message"></p>
+            <div class="modal-actions">
+                <button id="confirm-delete-btn" class="confirm-btn" onclick="confirmDelete()">Delete</button>
+                <button class="cancel-btn" onclick="hideDeleteConfirmation()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="input-area">
+        <h2>Add New {% if active_lang == 'es' %}Spanish{% elif active_lang == 'it' %}Italian{% elif active_lang == 'ru' %}Russian{% elif active_lang == 'ja' %}Japanese{% else %}French{% endif %} Words</h2>
+        <p>Enter text containing French words to analyze:</p>
+        
+        <form method="post" action="{% url 'process_french_text' %}" id="french-text-form" onsubmit="return showLoader()">
+            {% csrf_token %}
+            
+            <div class="model-selector">
+                <label for="provider_choice">Choose AI Provider:</label>
+                <select name="provider_choice" id="provider_choice" onchange="updateModels(this.value)">
+                    {% for provider in ai_providers %}
+                        <option value="{{ provider }}" {% if provider == selected_provider %}selected{% endif %}>{{ provider }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="model-selector">
+                <label for="model_choice">Select AI Model:</label>
+                <select name="model_choice" id="model_choice">
+                    {% if ai_models %}
+                        {% for model in ai_models %}
+                            <option value="{{ model }}" {% if model == default_model %}selected{% endif %}>{{ model }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="">No models available</option>
+                    {% endif %}
+                </select>
+            </div>
+            
+            <div class="model-selector">
+                <label for="language_choice">Select Language:</label>
+                <select name="language_choice" id="language_choice">
+                    <option value="French" {% if active_lang == 'fr' %}selected{% endif %}>French</option>
+                    <option value="Spanish" {% if active_lang == 'es' %}selected{% endif %}>Spanish</option>
+                    <option value="Italian" {% if active_lang == 'it' %}selected{% endif %}>Italian</option>
+                    <option value="Russian" {% if active_lang == 'ru' %}selected{% endif %}>Russian</option>
+                    <option value="Japanese" {% if active_lang == 'ja' %}selected{% endif %}>Japanese</option>
+                </select>
+                <small class="text-muted">A simplified, Japanese-specific prompt is used when Japanese is selected.</small>
+            </div>
+            
+            <div class="model-selector">
+                <label for="batch_size">Batch Size:</label>
+                <input type="number" name="batch_size" id="batch_size" value="{{ batch_size|default:20 }}" min="1" max="100" class="form-control">
+                <small class="text-muted">Number of words to process in each batch (default: 20)</small>
+            </div>
+            
+            <div class="mb-3">
+                <!-- Input for text content to be analyzed -->
+                <textarea class="form-control mb-2" name="text_content" rows="5" placeholder="Enter text to extract French words..."></textarea>
+            </div>
+            
+            
+            
+            {% if message %}
+                <div class="message {% if success %}success{% else %}error{% endif %}">
+                    {{ message }}
+                </div>
+            {% endif %}
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="submit-btn">Add Words</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- AI Debug Information Section - Collapsible like Data Management -->
+    <div class="deletion-area">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+            <h2>AI Debug Information</h2>
+            <span class="toggle-icon">▼</span>
+            </div>
+        <div class="collapsible-content">
+            <!-- Processing Status Section -->
+            <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+                <h3 style="margin: 0; font-size: 1.2rem;">Processing Status</h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div id="processing-info-container" style="display: none;">
+                    <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="font-size: 0.9rem;">
+                            <strong>Status:</strong> <span id="processing-status">Initializing...</span>
+                            <button id="stop-processing-btn" class="filter-btn" style="margin-left:10px; background:#f44336;" onclick="stopProcessing()" disabled>Stop</button>
+                            &nbsp;|&nbsp; <strong>Batches:</strong> <span id="batch-progress">0/0</span>
+                            &nbsp;|&nbsp; <strong>Current:</strong> <span id="current-batch">-</span>
+                            &nbsp;|&nbsp; <strong>Start:</strong> <span id="start-time">-</span>
+                            &nbsp;|&nbsp; <strong>Elapsed:</strong> <span id="elapsed-time">00:00:00</span>
+                            &nbsp;|&nbsp; <strong>End:</strong> <span id="end-time">-</span>
+                        </div>
+                        <div id="status-toast" style="display:none; padding:4px 8px; background:#e8f5e9; color:#2e7d32; border-radius:4px; font-size:0.85rem;">Processing started…</div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <table style="width:100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Batch</th>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Status</th>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Start</th>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">End</th>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Duration</th>
+                                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px;">Words</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batch-details"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="display: block; margin-top: 10px;" id="processing-status-empty-message">
+                    <em>No active processing. Submit text to see processing details.</em>
+                </div>
+            </div>
+    
+            <!-- AI Prompts Section -->
+            <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+                <h3 style="margin: 0; font-size: 1.2rem;">AI Prompts (What We're Sending)</h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content collapsed">
+                        {% if ai_prompts %}
+                        <div class="accordion" id="promptsAccordion">
+                            {% for prompt_info in ai_prompts %}
+                        <div style="border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; overflow: hidden;">
+                            <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)" style="padding: 10px; background-color: #f9f9f9; cursor: pointer;">
+                                <strong>Batch {{ prompt_info.batch_number }} Prompt ({{ prompt_info.words|length }} words)</strong>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="collapsible-content collapsed" style="padding: 10px; border-top: 1px solid #ddd;">
+                                        <h6>Words in this batch:</h6>
+                                <div style="margin-bottom: 10px;">
+                                            {% for word in prompt_info.words %}
+                                    <span style="display: inline-block; padding: 3px 8px; background-color: #e9ecef; border-radius: 4px; margin: 2px;">{{ word }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <h6>Full Prompt:</h6>
+                                <pre style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">{{ prompt_info.prompt }}</pre>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                <div style="padding: 10px; background-color: #d1ecf1; color: #0c5460; border-radius: 4px;">
+                    No AI prompts available. Process some text to see prompts.
+                </div>
+                        {% endif %}
+                    </div>
+                    
+            <!-- AI Responses Section -->
+            <div class="collapsible-header" onclick="toggleCollapsible(this)" style="padding: 5px 0; margin: 10px 0; border-bottom: 1px solid #ddd;">
+                <h3 style="margin: 0; font-size: 1.2rem;">AI Responses (What We're Getting Back)</h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content collapsed">
+                        {% if latest_ai_response %}
+                <div style="margin-bottom: 20px;">
+                    {% if latest_ai_response.raw_response %}
+                        {% for item in latest_ai_response.raw_response %}
+                        <div style="border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; overflow: hidden;">
+                            <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)" style="padding: 10px; background-color: #f9f9f9; cursor: pointer;">
+                                <strong>Batch {{ item.batch_number }} Response</strong>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="collapsible-content collapsed" style="padding: 10px; border-top: 1px solid #ddd;">
+                                {% if item.result %}
+                                <pre style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">{{ item.result|pprint }}</pre>
+                                {% elif item.error %}
+                                <div style="padding: 10px; background-color: #f8d7da; color: #721c24; border-radius: 4px;">Error: {{ item.error }}</div>
+                                {% else %}
+                                <div style="padding: 10px; background-color: #fff3cd; color: #856404; border-radius: 4px;">No response captured for this batch.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                </div>
+                {% else %}
+                <div style="padding: 10px; background-color: #d1ecf1; color: #0c5460; border-radius: 4px;">
+                    No AI responses available. Process some text to see responses.
+                </div>
+                {% endif %}
+                        </div>
+                        
+            <!-- Removed Preprocessing Details and Batch Processing Results to reduce clutter -->
+        </div>
+    </div>
+    
+    <script>
+        // When processing info is updated, also update the empty message visibility
+        function updateEmptyMessage() {
+            const processingContainer = document.getElementById('processing-info-container');
+            const emptyMessage = document.getElementById('processing-status-empty-message');
+            
+            if (processingContainer && emptyMessage) {
+                if (processingContainer.style.display === 'block') {
+                    emptyMessage.style.display = 'none';
+                } else {
+                    emptyMessage.style.display = 'block';
+                }
+            }
+        }
+        
+        // Call this after processing status updates
+        document.addEventListener('DOMContentLoaded', updateEmptyMessage);
+    </script>
+    
+    <!-- Data deletion section -->
+    <div class="deletion-area">
+        <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+            <h2>Data Management</h2>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="collapsible-content collapsed">
+            <p><strong>Warning:</strong> This section allows you to delete data from the database. Use with caution!</p>
+            
+            <!-- Notification area for deletion actions -->
+            <div id="notification-area" class="message" style="display: none;"></div>
+            
+            <div class="deletion-form">
+                <div class="deletion-field">
+                    <label for="model-choice">Select Table:</label>
+                    <select id="model-choice">
+                        {% for model_name, display_name in model_choices %}
+                            {% if active_lang == 'es' %}
+                                <option value="{{ model_name }}" {% if model_name == "SpanishWord" %}selected{% endif %}>{{ display_name }}</option>
+                            {% elif active_lang == 'ru' %}
+                                <option value="{{ model_name }}" {% if model_name == "RussianWord" %}selected{% endif %}>{{ display_name }}</option>
+                            {% elif active_lang == 'it' %}
+                                <option value="{{ model_name }}" {% if model_name == "ItalianWord" %}selected{% endif %}>{{ display_name }}</option>
+                            {% elif active_lang == 'ja' %}
+                                <option value="{{ model_name }}" {% if model_name == "JapaneseWord" %}selected{% endif %}>{{ display_name }}</option>
+                            {% else %}
+                                <option value="{{ model_name }}" {% if model_name == "FrenchWord" %}selected{% endif %}>{{ display_name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="deletion-field">
+                    <label for="record-id">Record ID:</label>
+                    <input type="number" id="record-id" min="1" placeholder="Enter ID" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                </div>
+                
+                <div class="deletion-field">
+                    <label for="start-id">ID Range:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="start-id" min="1" placeholder="Start ID" style="width: 50%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                        <input type="number" id="end-id" min="1" placeholder="End ID" style="width: 50%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                Note: When deleting from the French Word table, all related examples will be automatically deleted as well.
+            </div>
+            
+            <div class="deletion-actions">
+                <button class="delete-btn" onclick="deleteById()">Delete by ID</button>
+                <button class="delete-btn range" onclick="deleteByIdRange()">Delete ID Range</button>
+                <button class="delete-btn all" onclick="deleteAllRecords()">Delete All Records</button>
+                <button id="undo-delete-btn" class="undo-btn {% if not last_operation_id %}disabled{% endif %}" {% if not last_operation_id %}disabled{% endif %} onclick="undoLastDeletion()">Undo Last Deletion</button>
+            </div>
+        </div>
+    </div>
+    
+    {% if french_words %}
+    
+    <div class="filter-section">
+        <h3>Filter Words</h3>
+        <form method="get" class="filter-form">
+            <div class="filter-field">
+                <label for="search">Search:</label>
+                <input type="text" id="search" name="search" value="{{ request.GET.search|default:'' }}" placeholder="Search in all fields" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+            </div>
+            <div class="filter-field">
+                <label for="filter_field">Filter Field:</label>
+                <select id="filter_field" name="filter_field" style="width: 100%;">
+                    <option value="all" {% if request.GET.filter_field == 'all' %}selected{% endif %}>All Fields</option>
+                    <option value="original_phrase" {% if request.GET.filter_field == 'original_phrase' %}selected{% endif %}>Original Phrase</option>
+                    <option value="noun_form" {% if request.GET.filter_field == 'noun_form' %}selected{% endif %}>Noun Form</option>
+                    <option value="verb_form" {% if request.GET.filter_field == 'verb_form' %}selected{% endif %}>Verb Form</option>
+                    <option value="adjective_form" {% if request.GET.filter_field == 'adjective_form' %}selected{% endif %}>Adjective Form</option>
+                    <option value="adverb_form" {% if request.GET.filter_field == 'adverb_form' %}selected{% endif %}>Adverb Form</option>
+                    <option value="frequency" {% if request.GET.filter_field == 'frequency' %}selected{% endif %}>Frequency</option>
+                    <option value="category" {% if request.GET.filter_field == 'category' %}selected{% endif %}>Category</option>
+                    <option value="category_2" {% if request.GET.filter_field == 'category_2' %}selected{% endif %}>Category 2</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="marked_for_review">Review Status:</label>
+                <select id="marked_for_review" name="marked_for_review" style="width: 100%;">
+                    <option value="all" {% if request.GET.marked_for_review == 'all' %}selected{% endif %}>All Words</option>
+                    <option value="marked" {% if request.GET.marked_for_review == 'marked' %}selected{% endif %}>Marked for Review</option>
+                    <option value="unmarked" {% if request.GET.marked_for_review == 'unmarked' %}selected{% endif %}>Not Marked</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="frequency">Frequency:</label>
+                <select id="frequency" name="frequency" style="width: 100%;">
+                    <option value="" {% if not request.GET.frequency %}selected{% endif %}>All Frequencies</option>
+                    <option value="essential" {% if request.GET.frequency == 'essential' %}selected{% endif %}>Essential</option>
+                    <option value="very common" {% if request.GET.frequency == 'very common' %}selected{% endif %}>Very Common</option>
+                    <option value="common" {% if request.GET.frequency == 'common' %}selected{% endif %}>Common</option>
+                    <option value="uncommon" {% if request.GET.frequency == 'uncommon' %}selected{% endif %}>Uncommon</option>
+                    <option value="rare" {% if request.GET.frequency == 'rare' %}selected{% endif %}>Rare</option>
+                    <option value="very rare" {% if request.GET.frequency == 'very rare' %}selected{% endif %}>Very Rare</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="category">Category:</label>
+                <select id="category" name="category" style="width: 100%;">
+                    <option value="" {% if not request.GET.category %}selected{% endif %}>All Categories</option>
+                    {% for cat in categories %}
+                        {% if cat %}
+                            <option value="{{ cat }}" {% if request.GET.category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="category_2">Category 2:</label>
+                <select id="category_2" name="category_2" style="width: 100%;">
+                    <option value="" {% if not request.GET.category_2 %}selected{% endif %}>All Secondary Categories</option>
+                    {% for cat in categories_2 %}
+                        {% if cat %}
+                            <option value="{{ cat }}" {% if request.GET.category_2 == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="filter-btn">Apply Filter</button>
+            <a href="{% url 'french_words' %}" class="filter-btn reset">Reset</a>
+        </form>
+    </div>
+    
+    <div style="max-height: 600px; overflow: auto; border: 1px solid #ddd; border-radius: 6px; padding: 6px;">
+    <table style="margin:0;">
+        <thead>
+            <tr>
+                <th class="review-cell">Review</th>
+                <th><a href="?sort=id{% if request.GET.sort == 'id' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    #
+                    {% if request.GET.sort == 'id' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=original_phrase{% if request.GET.sort == 'original_phrase' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Original Phrase
+                    {% if request.GET.sort == 'original_phrase' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=noun_form{% if request.GET.sort == 'noun_form' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Noun Form
+                    {% if request.GET.sort == 'noun_form' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=verb_form{% if request.GET.sort == 'verb_form' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Verb Form
+                    {% if request.GET.sort == 'verb_form' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=adjective_form{% if request.GET.sort == 'adjective_form' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Adjective Form
+                    {% if request.GET.sort == 'adjective_form' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=adverb_form{% if request.GET.sort == 'adverb_form' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Adverb Form
+                    {% if request.GET.sort == 'adverb_form' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th><a href="?sort=frequency{% if request.GET.sort == 'frequency' and request.GET.direction != 'desc' %}&direction=desc{% endif %}">
+                    Metadata
+                    {% if request.GET.sort == 'frequency' or request.GET.sort == 'category' or request.GET.sort == 'category_2' %}
+                        <span class="sort-icon {% if request.GET.direction == 'desc' %}sort-desc{% else %}sort-asc{% endif %}"></span>
+                    {% endif %}
+                </a></th>
+                <th>Examples</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for word in french_words %}
+            <tr>
+                <td class="review-cell">
+                    <input 
+                        type="checkbox" 
+                        class="review-checkbox" 
+                        data-word-id="{{ word.id }}"
+                        {% if word.marked_for_review %}checked{% endif %} 
+                        onchange="toggleMarkedForReview(this, this.dataset.wordId)"
+                    >
+                </td>
+                <td>{{ word.id }}</td>
+                <td>{{ word.original_phrase|default:"-" }}</td>
+                <td>
+                    {% if word.noun_form %}
+                        <div class="word-container">
+                            <span class="word-form word-field" onclick="openGoogleTranslate('{{ word.noun_form }}')">{{ word.noun_form }}</span>
+                            {% if word.synonym_noun_form or word.antonym_noun_form %}
+                                <div class="related-words">
+                                    {% if word.synonym_noun_form %}
+                                        <span class="synonym synonym-field" onclick="openGoogleTranslate('{{ word.synonym_noun_form }}')">{{ word.synonym_noun_form }}</span>
+                                    {% endif %}
+                                    {% if word.synonym_noun_form and word.antonym_noun_form %}
+                                        <span class="separator">/</span>
+                                    {% endif %}
+                                    {% if word.antonym_noun_form %}
+                                        <span class="antonym antonym-field" onclick="openGoogleTranslate('{{ word.antonym_noun_form }}')">{{ word.antonym_noun_form }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if word.verb_form %}
+                        <div class="word-container">
+                            <span class="word-form word-field" onclick="openGoogleTranslate('{{ word.verb_form }}')">{{ word.verb_form }}</span>
+                            {% if word.synonym_verb_form or word.antonym_verb_form %}
+                                <div class="related-words">
+                                    {% if word.synonym_verb_form %}
+                                        <span class="synonym synonym-field" onclick="openGoogleTranslate('{{ word.synonym_verb_form }}')">{{ word.synonym_verb_form }}</span>
+                                    {% endif %}
+                                    {% if word.synonym_verb_form and word.antonym_verb_form %}
+                                        <span class="separator">/</span>
+                                    {% endif %}
+                                    {% if word.antonym_verb_form %}
+                                        <span class="antonym antonym-field" onclick="openGoogleTranslate('{{ word.antonym_verb_form }}')">{{ word.antonym_verb_form }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if word.adjective_form %}
+                        <div class="word-container">
+                            <span class="word-form word-field" onclick="openGoogleTranslate('{{ word.adjective_form }}')">{{ word.adjective_form }}</span>
+                            {% if word.synonym_adjective_form or word.antonym_adjective_form %}
+                                <div class="related-words">
+                                    {% if word.synonym_adjective_form %}
+                                        <span class="synonym synonym-field" onclick="openGoogleTranslate('{{ word.synonym_adjective_form }}')">{{ word.synonym_adjective_form }}</span>
+                                    {% endif %}
+                                    {% if word.synonym_adjective_form and word.antonym_adjective_form %}
+                                        <span class="separator">/</span>
+                                    {% endif %}
+                                    {% if word.antonym_adjective_form %}
+                                        <span class="antonym antonym-field" onclick="openGoogleTranslate('{{ word.antonym_adjective_form }}')">{{ word.antonym_adjective_form }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if word.adverb_form %}
+                        <div class="word-container">
+                            <span class="word-form word-field" onclick="openGoogleTranslate('{{ word.adverb_form }}')">{{ word.adverb_form }}</span>
+                            {% if word.synonym_adverb_form or word.antonym_adverb_form %}
+                                <div class="related-words">
+                                    {% if word.synonym_adverb_form %}
+                                        <span class="synonym synonym-field" onclick="openGoogleTranslate('{{ word.synonym_adverb_form }}')">{{ word.synonym_adverb_form }}</span>
+                                    {% endif %}
+                                    {% if word.synonym_adverb_form and word.antonym_adverb_form %}
+                                        <span class="separator">/</span>
+                                    {% endif %}
+                                    {% if word.antonym_adverb_form %}
+                                        <span class="antonym antonym-field" onclick="openGoogleTranslate('{{ word.antonym_adverb_form }}')">{{ word.antonym_adverb_form }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <div>
+                        {% if word.frequency %}<div><span class="badge frequency-badge">{{ word.frequency }}</span></div>{% endif %}
+                        {% if word.category %}<div><span class="badge category-badge">{{ word.category }}</span></div>{% endif %}
+                        {% if word.category_2 %}<div><span class="badge category-2-badge">{{ word.category_2 }}</span></div>{% endif %}
+                        <div><span class="badge" style="background:#e8f5e9; color:#2e7d32;">{{ word.native|yesno:"Native,Non-native" }}</span></div>
+                        {% if migrated_map|dict_get:word.id %}
+                            <div style="margin-top:4px;">
+                                <span class="badge" style="background:#fff3cd; color:#856404;">Migrated</span>
+                                <span style="font-size:12px; color:#555;">to: {{ migrated_map|dict_get:word.id|join:", " }}</span>
+                            </div>
+                        {% else %}
+                            <div style="margin-top:4px;">
+                                <span class="badge" style="background:#fdecea; color:#b71c1c;">Not migrated</span>
+                            </div>
+                        {% endif %}
+                        {% if active_lang == 'ja' %}
+                          <div style="margin-top:4px; font-size: 12px; color:#555;">
+                            {% if word.kanji_form %}<div>Kanji: {{ word.kanji_form }}</div>{% endif %}
+                            {% if word.kana_reading %}<div>Kana: {{ word.kana_reading }}</div>{% endif %}
+                            {% if word.romaji %}<div>Romaji: {{ word.romaji }}</div>{% endif %}
+                          </div>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                        {% if word.explanation %}
+                            <div class="explanation explanation-field" onclick="openGoogleTranslate('{{ word.explanation|escapejs }}')">{{ word.explanation }}</div>
+                    {% endif %}
+                    {% if word.examples.all %}
+                        {% for example in word.examples.all %}
+                            <div class="example example-field" onclick="openGoogleTranslate('{{ example.example_text|escapejs }}')">{{ example.example_text }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <em>No examples yet</em>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="pagination" style="position: sticky; bottom: 0; background: #fff; padding-top: 6px;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.filter_field %}&filter_field={{ request.GET.filter_field }}{% endif %}" class="btn">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.filter_field %}&filter_field={{ request.GET.filter_field }}{% endif %}" class="btn">Previous</a>
+        {% endif %}
+        
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.filter_field %}&filter_field={{ request.GET.filter_field }}{% endif %}" class="btn">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.filter_field %}&filter_field={{ request.GET.filter_field }}{% endif %}" class="btn">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    </div>
+    
+    {% else %}
+    <p class="empty-message">No French words have been added yet.</p>
+    {% endif %}
+    
+    <a href="{% url 'home' %}" class="btn">Back to Home</a>
+    
+    <!-- Add this to the bottom of the file, before the closing </body> tag -->
+    <script>
+        // Function to update processing information
+        function updateProcessingInfo() {
+            // Check if processing is active
+            fetch('{% url "processing_status" %}')
+                .then(function(response) { 
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    return response.json(); 
+                })
+                .then(function(data) {
+                    // Decide whether to show the container
+                    var shouldShow = data.is_processing || (data.start_time && data.start_time.length) || ((data.batch_times || []).length > 0);
+                    document.getElementById('processing-info-container').style.display = shouldShow ? 'block' : 'none';
+                    updateEmptyMessage();
+
+                    // Update headline status
+                    document.getElementById('processing-status').textContent = data.status;
+                    document.getElementById('batch-progress').textContent = data.completed_batches + '/' + data.total_batches;
+                    document.getElementById('current-batch').textContent = data.current_batch;
+                    if (data.start_time) {
+                        document.getElementById('start-time').textContent = new Date(data.start_time).toLocaleTimeString();
+                    }
+                    if (data.end_time) {
+                        document.getElementById('end-time').textContent = new Date(data.end_time).toLocaleTimeString();
+                    } else {
+                        document.getElementById('end-time').textContent = '-';
+                    }
+
+                    // Calculate elapsed time
+                    var elapsedString = '00:00:00';
+                    if (data.status === 'processing' && data.start_time) {
+                        var startTime = new Date(data.start_time);
+                        var now = new Date();
+                        var elapsedSeconds = Math.floor((now - startTime) / 1000);
+                        var hours = Math.floor(elapsedSeconds / 3600);
+                        var minutes = Math.floor((elapsedSeconds % 3600) / 60);
+                        var seconds = elapsedSeconds % 60;
+                        elapsedString = (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                    } else if (typeof data.total_duration === 'number') {
+                        var total = Math.floor(data.total_duration);
+                        var hours2 = Math.floor(total / 3600);
+                        var minutes2 = Math.floor((total % 3600) / 60);
+                        var seconds2 = total % 60;
+                        elapsedString = (hours2 < 10 ? '0' : '') + hours2 + ':' + (minutes2 < 10 ? '0' : '') + minutes2 + ':' + (seconds2 < 10 ? '0' : '') + seconds2;
+                    }
+                    document.getElementById('elapsed-time').textContent = elapsedString;
+
+                    // Update batch details
+                    var batchDetailsTable = document.getElementById('batch-details');
+                    if (batchDetailsTable) {
+                        batchDetailsTable.innerHTML = '';
+                        (data.batch_times || []).forEach(function(batch) {
+                            var row = document.createElement('tr');
+                            if (batch.status === 'success') {
+                                row.style.backgroundColor = '#d4edda';
+                            } else if (batch.status === 'failed' || batch.status === 'error') {
+                                row.style.backgroundColor = '#f8d7da';
+                            } else {
+                                row.style.backgroundColor = '#fff3cd';
+                            }
+                            var cells = [
+                                batch.batch_number,
+                                batch.status,
+                                batch.start_time ? new Date(batch.start_time).toLocaleTimeString() : '-',
+                                batch.end_time ? new Date(batch.end_time).toLocaleTimeString() : '-',
+                                (typeof batch.duration === 'number') ? (batch.duration.toFixed(2) + 's') : '-',
+                                batch.words_count || '-'
+                            ];
+                            cells.forEach(function(text) {
+                                var td = document.createElement('td');
+                                td.style.padding = '8px';
+                                td.style.borderBottom = '1px solid #ddd';
+                                td.textContent = text;
+                                row.appendChild(td);
+                            });
+                            batchDetailsTable.appendChild(row);
+                        });
+                    }
+
+                    // Continue polling only while processing
+                    // Enable/disable stop button based on status
+                    var stopBtn = document.getElementById('stop-processing-btn');
+                    if (stopBtn) {
+                        stopBtn.disabled = (data.status !== 'processing' && data.status !== 'stopping');
+                    }
+
+                    if (data.status === 'processing' || data.status === 'stopping') {
+                        setTimeout(updateProcessingInfo, 1000);
+                    } else if (data.status === 'completed' || data.status === 'failed' || data.status === 'stopped') {
+                        var toast = document.getElementById('status-toast');
+                        if (toast) {
+                            var msg = 'Processing finished';
+                            if (data.status === 'completed') msg = 'All batches completed';
+                            if (data.status === 'failed') msg = 'Processing finished with errors';
+                            if (data.status === 'stopped') msg = 'Processing stopped by user';
+                            toast.textContent = msg;
+                            toast.style.display = 'inline-block';
+                            setTimeout(function(){ toast.style.display = 'none'; }, 4000);
+                        }
+                        // Refresh the page to display newly added words only once per completed run
+                        try {
+                            var endTimeKey = 'lastProcessingEndTime';
+                            var lastSeenEnd = sessionStorage.getItem(endTimeKey);
+                            if (data.end_time && lastSeenEnd !== data.end_time) {
+                                sessionStorage.setItem(endTimeKey, data.end_time);
+                                setTimeout(function() { window.location.reload(); }, 800);
+                            }
+                        } catch (e) {
+                            // Fallback if sessionStorage is unavailable
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        }
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error fetching processing status:', error);
+                    setTimeout(updateProcessingInfo, 5000); // Retry after 5 seconds on error
+                });
+        }
+        
+        // Start polling when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if form is submitted
+            var form = document.getElementById('french-text-form');
+            // No extra submit handler needed; showLoader handles async submit and kickoff
+            
+            // Check if we're already processing
+            updateProcessingInfo();
+        });
+    </script>
+</body>
+</html> 

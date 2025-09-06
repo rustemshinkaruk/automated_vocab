@@ -1,0 +1,83 @@
+# Japanese (Beginner) – Simplified structure and prompt
+
+Goal: keep your current columns; add only minimal Japanese script fields, and use a simple prompt that returns one base form, a translation, and 1–2 examples.
+
+## What to store (no schema overhaul)
+- Keep existing columns: original_phrase, noun_form, verb_form, adjective_form, adverb_form, explanation, examples, frequency, category, category_2, native, etc.
+- Add minimal Japanese script fields:
+  - kanji_form (optional)
+  - kana_reading (hiragana/katakana)
+  - romaji 
+  - furigana
+
+prompt = f"""
+    Here is a list of {language} words. These words are separated by a dot. There are phrases that have commas inside of them and they should be treated as a whole phrase.
+    
+    Words: {text}
+    
+    For each word in the list, do the following:
+    1) If it's a single word (not a phrase):
+        - return it in the infinitve form. 
+        - Also generate example sentence for it
+    2) If it is a phrase:
+        - keep it as is (if you see a spelling mistake, you can correct it)
+
+
+    For original_phrase field in the JSON object:
+    - check if the word correctly spelled. If it is not, write the correct form of the word and put the incorrect one in the parenthesis next to it.
+    - If it's a phrase, use the entire phrase. also correctly spell the words in the phrase and put the incorrect ones in the parenthesis next to it.
+
+    
+    For the Frequnecy field in the JSON object:
+    - assign a one of the following values : (essential, very common, common, uncommon, rare, very rare)
+    - this will indicate the frequency of the word in the language.
+    
+    For the category field in the JSON object:
+    - Assign a relevant semantic category to the word based on its meaning and typical usage.
+    - there will be 1 category per word id (even if the word has the verb,noun,adjective,adverb forms, you should assign the same category to all the forms) 
+    - The category should be intuitive and descriptive (e.g., household items, emotions, natural elements, professions, actions, tools, etc.), keep it simple and intuitive. avoid any categories with a slash bar like , just use general phrases or terms
+    - Use only one concise category name per word. 
+    For the category_2 field in the JSON object:
+    - Assign a second category to the word based on its meaning and typical usage.
+    - this category should be more specific than the  category field.
+    - don't mention several cattegories for one word. it should be general and intuitive.  
+    - if there is no second category, store null in the field.
+
+    also provide synonyms and antonyms for each word .
+    - if there are no synonyms or antonyms, store null in the fields.
+
+    For the explanation field, provide a short explanation of the word form.
+    - the explanation should be in language of the word
+    
+
+
+    Respond ONLY with the JSON object, no additional text.
+    Return the results as a JSON object with the following structure: (Follow the structure exactly)
+    {{
+        "words": [
+            {{
+                "noun_form": "string or null",
+                "verb_form": "string or null",
+                "adjective_form": "string or null",
+                "adverb_form": "string or null",
+                "examples": ["example sentence 1", "example sentence 2", "example sentence 3", "example sentence 4"],
+                "original_phrase": "string",
+                "frequency": "string",
+                "category": "string",
+                "category_2": "string",
+                "synonym_noun_form": "string or null",
+                "synonym_verb_form": "string or null",
+                "synonym_adjective_form": "string or null",
+                "synonym_adverb_form": "string or null",
+                "antonym_noun_form": "string or null",
+                "antonym_verb_form": "string or null",
+                "antonym_adjective_form": "string or null",
+                "antonym_adverb_form": "string or null",
+                "explanation": "string"
+            }}
+        ]
+    }}
+    
+    
+    """
+

@@ -1,0 +1,157 @@
+{% extends 'words/base.html' %}
+
+{% block title %}{{ word.word }} - Word Detail{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>{{ word.word }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Word Information</h4>
+                    <p><strong>Language:</strong> {{ word.language|title }}</p>
+                    <p><strong>Created:</strong> {{ word.created_at }}</p>
+                    <p><strong>Last Updated:</strong> {{ word.updated_at }}</p>
+                    {% if word.marked_for_review %}
+                    <p><span class="badge bg-warning">Marked for Review</span></p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h4>Actions</h4>
+                    <div class="btn-group">
+                        <a href="https://translate.google.com/?sl={{ word.language }}&tl=en&text={{ word.word }}&op=translate" 
+                           class="btn btn-outline-primary" target="_blank">
+                            <i class="fas fa-language"></i> Google Translate
+                        </a>
+                        <a href="javascript:void(0);" onclick="toggleMarkedForReview({{ word.id }})" class="btn btn-outline-warning">
+                            {% if word.marked_for_review %}
+                            <i class="fas fa-check-circle"></i> Unmark for Review
+                            {% else %}
+                            <i class="fas fa-exclamation-circle"></i> Mark for Review
+                            {% endif %}
+                        </a>
+                        <a href="javascript:void(0);" onclick="confirmDelete({{ word.id }})" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h4>Definition</h4>
+                    <p>{{ word.definition|linebreaks }}</p>
+                    
+                    {% if word.synonyms %}
+                    <h4>Synonyms</h4>
+                    <p>
+                        {% for synonym in word.synonyms_list %}
+                        <a href="https://translate.google.com/?sl={{ word.language }}&tl=en&text={{ synonym|urlencode }}&op=translate" 
+                           class="badge bg-secondary text-decoration-none text-white me-1" target="_blank">
+                            {{ synonym }}
+                        </a>
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                    
+                    {% if word.antonyms %}
+                    <h4>Antonyms</h4>
+                    <p>
+                        {% for antonym in word.antonyms_list %}
+                        <a href="https://translate.google.com/?sl={{ word.language }}&tl=en&text={{ antonym|urlencode }}&op=translate" 
+                           class="badge bg-secondary text-decoration-none text-white me-1" target="_blank">
+                            {{ antonym }}
+                        </a>
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    {% if word.examples %}
+                    <h4>Examples</h4>
+                    <ul class="list-group">
+                        {% for example in word.examples_list %}
+                        <li class="list-group-item">
+                            <a href="https://translate.google.com/?sl={{ word.language }}&tl=en&text={{ example|urlencode }}&op=translate" 
+                               class="text-decoration-none" target="_blank">
+                                {{ example }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if word.explanation %}
+                    <h4 class="mt-3">Additional Explanation</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            {{ word.explanation|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'french_words' %}" class="btn btn-secondary">Back to Word List</a>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the word "{{ word.word }}"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="confirmDeleteBtn" href="{% url 'delete_word' word.id %}" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmDelete(wordId) {
+        var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        document.getElementById('confirmDeleteBtn').href = "{% url 'delete_word' word.id %}";
+        modal.show();
+    }
+    
+    function toggleMarkedForReview(wordId) {
+        fetch("{% url 'toggle_marked_for_review' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ word_id: wordId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to reflect the changes
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the word.');
+        });
+    }
+</script>
+{% endblock %} 

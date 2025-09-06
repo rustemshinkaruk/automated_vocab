@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Responses - Vocabulary Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-view {
+            background-color: #2196F3;
+        }
+        .btn-view:hover {
+            background-color: #0b7dda;
+        }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .pagination .btn {
+            margin-top: 0;
+            padding: 5px 10px;
+        }
+        .pagination .current {
+            background-color: #333;
+        }
+        .empty-message {
+            padding: 15px;
+            background-color: #f2f2f2;
+            border-radius: 4px;
+            color: #666;
+            font-style: italic;
+        }
+        .meta {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Responses</h1>
+        
+        <div class="card">
+            <a href="{% url 'french_words' %}" class="btn">Back to French Words</a>
+            
+            {% if responses %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Provider</th>
+                            <th>Model</th>
+                            <th>Created</th>
+                            <th>Input Preview</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for response in responses %}
+                            <tr>
+                                <td>{{ response.id }}</td>
+                                <td>{{ response.provider }}</td>
+                                <td>{{ response.model }}</td>
+                                <td>{{ response.created_at }}</td>
+                                <td>{{ response.input_text|truncatechars:50 }}</td>
+                                <td>
+                                    <a href="{% url 'view_ai_response' response.id %}" class="btn btn-view">View Details</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if is_paginated %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="btn">First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="btn">Previous</a>
+                    {% endif %}
+                    
+                    <span class="current btn">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="btn">Next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="btn">Last</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-message">No AI responses found. Try processing some text first.</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html> 

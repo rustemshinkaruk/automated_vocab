@@ -1,0 +1,6 @@
+Django>=4.2.0
+psycopg2-binary>=2.9.9  # PostgreSQL adapter
+python-dotenv>=1.0.0    # For environment variables
+djangorestframework>=3.14.0  # For REST API
+openai>=1.12.0  # For GPT integration 
+google-generativeai>=0.3.0  # For Gemini integration 

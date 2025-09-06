@@ -1,0 +1,98 @@
+## Migrations (Concise Spec)
+
+Goal: migrate words from one source language to one or more target languages in small batches (default 20), translate via AI, avoid duplicates, and maintain cross-language links for later multi-language views.
+
+### Page (Migrations Tab)
+- Select: source language (1), target languages (multi), batch size (default 20).
+- Choose words: filters + multi-select (e.g., 100 French words).
+- Actions: Start batch, see progress (processed/total), errors, retry failed.
+
+### Batch Processing
+- Process 20 words at a time per target.
+- For each source word and target language:
+  1) Build JSON payload (lemma, forms: noun/verb/adj/adv, synonyms, antonyms; examples; metadata: category, frequency).
+  2) Call AI with strict JSON output.
+  3) De-dup in target; if exists, link; else create word and link.
+  4) Record per-item status and target_word_id.
+
+### Minimal Schema
+- migration_batches(id, source_lang, target_langs_json, created_at, status)
+- migration_items(id, batch_id, source_lang, source_word_id, target_lang, status, target_word_id, error)
+- lexeme_groups(id) — cross-language grouping handle
+- lexeme_group_members(group_id, language, word_id) UNIQUE(language, word_id)
+
+Rationale:
+- migration_items tells us exactly which source words were migrated to which targets (audit + re-run filters).
+- lexeme_groups provides N-way linking: any word in any language can be connected; fetching all linked words becomes a simple group lookup.
+
+### Linking Rules
+- If source word already in a group, add target word to same group; else create a new group and add both.
+- If target word already exists (by lemma or other uniqueness we define), do not insert; just add it to the group and set migration_item.target_word_id.
+- If both words belong to different groups (rare), merge groups.
+
+### Marking “migrated to X”
+- Determined by `migration_items` rows per (source_word_id, target_lang). Use for UI badges and to avoid re-migrating.
+
+### Prompt (System)
+Return STRICT JSON only. Translate from {source_lang} to {target_lang}. Map forms (noun/verb/adj/adv); use empty string when not applicable. Translate synonyms/antonyms to common equivalents. Translate examples idiomatically, preserve meaning. Do not add or remove items. No commentary.
+
+### Prompt (User JSON template)
+{
+  "source_language": "fr",
+  "target_language": "es",
+  "word": {"id": 123, "lemma": "…", "forms": {"noun": "…", "verb": "…", "adjective": "…", "adverb": "…"}, "synonyms": ["…"], "antonyms": ["…"], "category": "food", "frequency": 3},
+  "examples": [{"id": 987, "text": "…"}]
+}
+Expected output: {"lemma": "…", "forms": {…}, "synonyms": ["…"], "antonyms": ["…"], "examples": [{"source_example_id":987, "text":"…"}], "metadata": {"category": "food", "frequency": 3, "origin": "non-native"}}
+
+### De-dup Strategy (Target)
+- Match by normalized lemma (and optionally category/part-of-speech). If found → reuse existing word.
+- Optional fuzzy fallback (soundex/ trigram) gated behind a toggle.
+
+### Fetching Linked Translations (API)
+- Given (language, word_id) → find its group_id in `lexeme_group_members` → return all members grouped by language.
+
+### Idempotency
+- Skip creating migration_items when an item exists for the same (batch_id, source_word_id, target_lang) or when an earlier successful item already linked the pair.
+
+### Examples Handling
+- Translate examples 1:1; store aligned via `source_example_id` in the AI output; insert/update examples under the target word accordingly.
+
+### Prompt message (final)
+
+System:
+```
+You are a bilingual lexicographer. Translate the provided JSON for a single source word and its examples from {source_lang} to {target_lang}.
+
+Requirements:
+- Output STRICT JSON only; no commentary or markdown.
+- Match exactly the Target Output Schema keys and structure.
+- Do not add/remove items; keep counts equal to input where applicable.
+- Forms: noun/verb/adjective/adverb; use empty string if not applicable.
+- Translate examples idiomatically; preserve meaning and register. Keep alignment by copying input example id to output source_example_id.
+```
+
+User:
+```
+We are translating from {source_lang} to {target_lang}. Translate the following input JSON into the Target Output Schema.
+
+Input JSON:
+{
+  "source_language": "{source_lang}",
+  "target_language": "{target_lang}",
+  "word": {"id": 123, "lemma": "...", "forms": {"noun": "...", "verb": "...", "adjective": "...", "adverb": "..."}, "synonyms": ["..."], "antonyms": ["..."], "category": "food", "frequency": 3},
+  "examples": [{"id": 987, "text": "..."}]
+}
+
+Target Output Schema (produce exactly this shape):
+{
+  "lemma": "...",
+  "forms": {"noun": "", "verb": "", "adjective": "", "adverb": ""},
+  "synonyms": ["..."],
+  "antonyms": ["..."],
+  "examples": [{"source_example_id": 987, "text": "..."}],
+  "metadata": {"category": "food", "frequency": 3, "origin": "non-native"}
+}
+
+Return only the JSON object matching Target Output Schema.
+```
